@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Eco-Ideation Tool – Bocken et al. (2011)</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: #f4f6f8;
+      color: #1a1a1a;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #1b4332;
+      color: #fff;
+      padding: 20px 32px;
+    }
+    header h1 { font-size: 1.4rem; font-weight: 700; }
+    header p  { font-size: 0.82rem; opacity: 0.78; margin-top: 4px; }
+
+    main {
+      max-width: 960px;
+      margin: 28px auto;
+      padding: 0 16px 48px;
+    }
+
+    /* ── section headings ── */
+    .section-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 32px 0 14px;
+    }
+    .section-label .badge {
+      writing-mode: vertical-lr;
+      transform: rotate(180deg);
+      background: #1b4332;
+      color: #fff;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 10px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .section-label .badge.processing { background: #374151; }
+    .section-label h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #374151;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* ── slider card ── */
+    .slider-card {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+      padding: 18px 22px 20px;
+      margin-bottom: 14px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .card-num {
+      flex-shrink: 0;
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: #d1fae5;
+      color: #065f46;
+      font-size: 0.78rem;
+      font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .card-num.processing-num {
+      background: #e5e7eb;
+      color: #374151;
+    }
+    .card-title-block { flex: 1; }
+    .card-title {
+      font-size: 0.88rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #1b4332;
+      margin-bottom: 4px;
+    }
+    .card-title.processing-title { color: #374151; }
+    .card-question {
+      font-size: 0.82rem;
+      color: #4b5563;
+      line-height: 1.5;
+      font-style: italic;
+    }
+
+    /* ── the slider itself ── */
+    .scale-row {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 8px;
+      align-items: center;
+      margin-top: 14px;
+    }
+    .scale-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      line-height: 1.35;
+    }
+    .scale-label.best  { color: #166534; text-align: left; }
+    .scale-label.worst { color: #991b1b; text-align: right; }
+
+    .slider-wrap { flex: 1; }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 8px;
+      border-radius: 4px;
+      outline: none;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: #1b4332;
+      border: 2px solid #fff;
+      box-shadow: 0 1px 4px rgba(0,0,0,.2);
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+    input[type="range"].processing-slider::-webkit-slider-thumb {
+      background: #374151;
+    }
+
+    /* colour track filled dynamically via JS */
+    .value-pill {
+      margin-top: 8px;
+      text-align: center;
+      font-size: 0.73rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      display: inline-block;
+      min-width: 70px;
+    }
+
+    .pill-row { text-align: center; margin-top: 6px; }
+
+    /* ── score summary ── */
+    #summary-panel {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+      padding: 22px 24px;
+      margin-top: 32px;
+    }
+    #summary-panel h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+      color: #1b4332;
+    }
+    #summary-bars { display: flex; flex-direction: column; gap: 8px; }
+    .sum-row {
+      display: grid;
+      grid-template-columns: 160px 1fr 50px;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.76rem;
+    }
+    .sum-name { color: #374151; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sum-bar-bg {
+      height: 10px;
+      background: #e5e7eb;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    .sum-bar-fill {
+      height: 100%;
+      border-radius: 5px;
+      transition: width 0.25s, background 0.25s;
+    }
+    .sum-val { text-align: right; color: #6b7280; }
+
+    #overall-score {
+      margin-top: 16px;
+      font-size: 0.85rem;
+      color: #374151;
+    }
+    #overall-score span { font-weight: 700; font-size: 1.1rem; color: #1b4332; }
+
+    footer {
+      text-align: center;
+      font-size: 0.72rem;
+      color: #9ca3af;
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Eco-Ideation Tool</h1>
+  <p>Bocken, N.M.P., Allwood, J.M., Willey, A.R. &amp; King, J.M.H. (2011) — Fig. 3 Interactive Sliders</p>
+</header>
+
+<main>
+
+  <!-- ────────── PRODUCT DESIGN ────────── -->
+  <div class="section-label">
+    <div class="badge">Product Design</div>
+    <h2>Product Design &nbsp;(sliders 1–7)</h2>
+  </div>
+
+  <div id="sliders-pd"></div>
+
+  <!-- ────────── PROCESSING & VALUE CHAIN ────────── -->
+  <div class="section-label">
+    <div class="badge processing">Processing &amp; Value Chain</div>
+    <h2>Processing &amp; Value Chain &nbsp;(sliders 8–14)</h2>
+  </div>
+
+  <div id="sliders-pvc"></div>
+
+  <!-- ────────── SUMMARY ────────── -->
+  <div id="summary-panel">
+    <h3>Environmental Performance Summary</h3>
+    <div id="summary-bars"></div>
+    <p id="overall-score">Overall score: <span id="overall-val">—</span> / 100</p>
+    <p style="font-size:0.72rem;color:#9ca3af;margin-top:6px;">100 = best imaginable (lowest GHG impact). Move sliders to reflect your product's current state and identify where to focus eco-ideation.</p>
+  </div>
+
+</main>
+
+<footer>Source: Bocken et al. (2011) <em>J. Cleaner Production</em> 19(12), 1279–1287</footer>
+
+<script>
+const SLIDERS = [
+  /* ── PRODUCT DESIGN ── */
+  {
+    id: 1, section: "pd",
+    title: "Delivery of Value",
+    question: "Can value (e.g. joy, confidence) and functions be delivered without a product?",
+    best:   "Delivering value / functions without a product",
+    medium: "Shared use / Reduced product need",
+    worst:  "Product (not shared)"
+  },
+  {
+    id: 2, section: "pd",
+    title: "Product Functionality",
+    question: "Does the product serve several functions, or can the function be integrated in something else? Are complementary products required to make it work?",
+    best:   "Multi-functional / No complementary tool required",
+    medium: "Single function or tool required",
+    worst:  "Single function / Complementary tool required"
+  },
+  {
+    id: 3, section: "pd",
+    title: "Compacting",
+    question: "How compact is the product? Can the product be sized up or diluted at a later stage of the product life cycle?",
+    best:   "Compact / Dense",
+    medium: "Medium compactness and density",
+    worst:  "Outsized / Dilute"
+  },
+  {
+    id: 4, section: "pd",
+    title: "Components / Ingredients",
+    question: "How energy intensive are components and ingredients? (e.g. plastic is less energy intensive than steel; paper is less energy intensive than plastic; animal-based is more energy intensive than vegetable-based, keeping weight and distance travelled equal)",
+    best:   "Non-energy-intensive",
+    medium: "Room for improvement",
+    worst:  "Energy-intensive"
+  },
+  {
+    id: 5, section: "pd",
+    title: "Raw Material Efficiency",
+    question: "How efficiently are raw materials used?",
+    best:   "Efficient: Low use and loss. Reusable, Recyclable",
+    medium: "Room for improvement",
+    worst:  "Inefficient: High use/loss. Disposable, Non-Recyclable"
+  },
+  {
+    id: 6, section: "pd",
+    title: "Durability / Effect / Experience",
+    question: "Is the product durable? Is the effect or experience long-lasting? Can the product be used in a targeted way to fulfill the required functions?",
+    best:   "Durable / Long-lasting / Can be used in a targeted way",
+    medium: "Medium effect, not very targeted",
+    worst:  "Short-lifetime / Short-lived effect / Unfocused"
+  },
+  {
+    id: 7, section: "pd",
+    title: "End of Life",
+    question: "Can the product be entirely used up, or is it endlessly reusable?",
+    best:   "0% waste at end of life / Endlessly reusable",
+    medium: "Some recycle, repair, disassembly, reuse issues",
+    worst:  "100% waste / Not reusable, repairable or recyclable"
+  },
+
+  /* ── PROCESSING & VALUE CHAIN ── */
+  {
+    id: 8, section: "pvc",
+    title: "Intermediate Packaging",
+    question: "How often is the product repacked throughout the supply chain?",
+    best:   "One shelf-ready pack",
+    medium: "2–3 repackings",
+    worst:  "4 or more repackings"
+  },
+  {
+    id: 9, section: "pvc",
+    title: "Distance",
+    question: "What is the distance travelled from raw materials sourcing to production, warehouses, retail and final consumer use? Can some processing be done at home or locally?",
+    best:   "Local / Home",
+    medium: "National / Regional",
+    worst:  "Global"
+  },
+  {
+    id: 10, section: "pvc",
+    title: "Load Transport",
+    question: "Is the capacity of the mode of transport fully used (also on the return journey)? Does product and process design enable full loads?",
+    best:   "100% full",
+    medium: "50% full",
+    worst:  "0% full"
+  },
+  {
+    id: 11, section: "pvc",
+    title: "Temperature Transport",
+    question: "How much non-ambient temperature transport is required?",
+    best:   "None",
+    medium: "Some",
+    worst:  "Much"
+  },
+  {
+    id: 12, section: "pvc",
+    title: "Temperature Cycles",
+    question: "How many temperature changes take place throughout the product life cycle including use? (e.g. boiling, freezing and cooling)",
+    best:   "None",
+    medium: "Some",
+    worst:  "Many"
+  },
+  {
+    id: 13, section: "pvc",
+    title: "Temperature for Storage",
+    question: "How much non-ambient temperature storage of raw materials and final products is required throughout the product life cycle including use?",
+    best:   "None",
+    medium: "Some",
+    worst:  "Much"
+  },
+  {
+    id: 14, section: "pvc",
+    title: "Storage Time",
+    question: "How long is the final product stored throughout the whole supply chain? Can it for example be made more to demand?",
+    best:   "Zero days",
+    medium: "1 day – 6 months",
+    worst:  "More than 6 months"
+  }
+];
+
+/* ── render ── */
+function scoreToColor(pct) {
+  /* green at 100, amber at 50, red at 0 */
+  const r = pct < 50 ? 220 : Math.round(220 - (pct - 50) * 3.2);
+  const g = pct > 50 ? 160 : Math.round(pct * 3.2);
+  return `rgb(${r},${g},40)`;
+}
+
+function trackGradient(pct) {
+  const c = scoreToColor(pct);
+  return `linear-gradient(to right, ${c} 0%, ${c} ${pct}%, #e5e7eb ${pct}%, #e5e7eb 100%)`;
+}
+
+function pillStyle(pct) {
+  const c = scoreToColor(pct);
+  return `background:${c}22; color:${c}; border:1px solid ${c}55;`;
+}
+
+function pillText(pct) {
+  if (pct >= 80) return "Best";
+  if (pct >= 55) return "Good";
+  if (pct >= 35) return "Medium";
+  if (pct >= 15) return "Poor";
+  return "Worst";
+}
+
+const values = {}; // id → 0..100
+
+function buildCard(s) {
+  const isPVC = s.section === "pvc";
+  const numClass = isPVC ? "card-num processing-num" : "card-num";
+  const titleClass = isPVC ? "card-title processing-title" : "card-title";
+  const sliderClass = isPVC ? "processing-slider" : "";
+  const initVal = 50;
+  values[s.id] = initVal;
+
+  return `
+  <div class="slider-card" id="card-${s.id}">
+    <div class="card-header">
+      <div class="${numClass}">${s.id}</div>
+      <div class="card-title-block">
+        <div class="${titleClass}">${s.title}</div>
+        <div class="card-question">${s.question}</div>
+      </div>
+    </div>
+
+    <div class="scale-row">
+      <div class="scale-label best">✓ Best:<br>${s.best}</div>
+      <div style="flex:1; min-width:160px;">
+        <input
+          type="range" min="0" max="100" value="${initVal}"
+          id="range-${s.id}"
+          class="${sliderClass}"
+          data-id="${s.id}"
+          oninput="updateSlider(this)"
+        />
+        <div class="pill-row">
+          <span class="value-pill" id="pill-${s.id}" style="${pillStyle(initVal)}">${pillText(initVal)} (${initVal})</span>
+        </div>
+      </div>
+      <div class="scale-label worst">✗ Worst:<br>${s.worst}</div>
+    </div>
+  </div>`;
+}
+
+document.getElementById("sliders-pd").innerHTML  = SLIDERS.filter(s => s.section === "pd" ).map(buildCard).join("");
+document.getElementById("sliders-pvc").innerHTML = SLIDERS.filter(s => s.section === "pvc").map(buildCard).join("");
+
+/* apply initial track colours */
+SLIDERS.forEach(s => applyTrack(s.id, 50));
+buildSummary();
+
+/* ── update ── */
+function updateSlider(input) {
+  const id  = +input.dataset.id;
+  const val = +input.value;
+  values[id] = val;
+  applyTrack(id, val);
+
+  const pill = document.getElementById("pill-" + id);
+  pill.textContent = `${pillText(val)} (${val})`;
+  pill.style.cssText = pillStyle(val);
+
+  buildSummary();
+}
+
+function applyTrack(id, val) {
+  const el = document.getElementById("range-" + id);
+  el.style.background = trackGradient(val);
+}
+
+/* ── summary ── */
+function buildSummary() {
+  const container = document.getElementById("summary-bars");
+  container.innerHTML = SLIDERS.map(s => {
+    const v = values[s.id];
+    const c = scoreToColor(v);
+    return `
+    <div class="sum-row">
+      <div class="sum-name" title="${s.title}">${s.id}. ${s.title}</div>
+      <div class="sum-bar-bg">
+        <div class="sum-bar-fill" style="width:${v}%;background:${c}"></div>
+      </div>
+      <div class="sum-val">${v}</div>
+    </div>`;
+  }).join("");
+
+  const avg = Math.round(SLIDERS.reduce((a, s) => a + values[s.id], 0) / SLIDERS.length);
+  const ov = document.getElementById("overall-val");
+  ov.textContent = avg;
+  ov.style.color = scoreToColor(avg);
+}
+</script>
+</body>
+</html>

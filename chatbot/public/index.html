@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Water Eco-Ideation Chatbot</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#f0f4f1;height:100vh;display:flex;overflow:hidden}
+
+/* ── Sidebar ── */
+#sidebar{width:280px;min-width:280px;background:#1B4332;color:#fff;display:flex;flex-direction:column;overflow:hidden}
+#sidebar-header{padding:20px 16px 12px;border-bottom:1px solid #2D6A4F}
+#sidebar-header h2{font-size:14px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#95d5b2;margin-bottom:4px}
+#product-name{font-size:16px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#mode-badge{display:inline-block;margin-top:6px;font-size:10px;padding:2px 7px;border-radius:20px;background:#2D6A4F;color:#95d5b2}
+
+#progress-list{flex:1;overflow-y:auto;padding:10px 0}
+#progress-list::-webkit-scrollbar{width:4px}
+#progress-list::-webkit-scrollbar-thumb{background:#2D6A4F;border-radius:2px}
+
+.prog-item{display:flex;align-items:center;gap:10px;padding:5px 16px;cursor:default;border-left:3px solid transparent;transition:background .15s}
+.prog-item.active{background:rgba(255,255,255,.08);border-left-color:#95d5b2}
+.prog-item.done{opacity:.7}
+.prog-dot{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;background:#2D6A4F;color:#95d5b2}
+.prog-item.done .prog-dot{background:#40916C;color:#fff}
+.prog-item.active .prog-dot{background:#95d5b2;color:#1B4332}
+.prog-label{font-size:12px;color:#d8f3dc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prog-item.done .prog-label{text-decoration:line-through;opacity:.6}
+.prog-section{font-size:10px;color:#52b788;padding:8px 16px 2px;text-transform:uppercase;letter-spacing:.06em}
+
+#ideas-panel{border-top:1px solid #2D6A4F;padding:12px 16px;max-height:200px;overflow-y:auto}
+#ideas-panel h3{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#95d5b2;margin-bottom:6px}
+#ideas-list{list-style:none;display:flex;flex-direction:column;gap:4px}
+#ideas-list li{font-size:12px;color:#d8f3dc;background:rgba(255,255,255,.07);padding:4px 8px;border-radius:4px;line-height:1.3}
+#idea-count{font-size:11px;color:#52b788;margin-bottom:4px}
+
+/* ── Main ── */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* Landing */
+#landing{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;padding:24px}
+#landing h1{font-size:28px;font-weight:700;color:#1B4332;text-align:center;line-height:1.2}
+#landing p{color:#555;max-width:480px;text-align:center;line-height:1.6;font-size:15px}
+#landing input{width:100%;max-width:400px;padding:12px 16px;border:2px solid #40916C;border-radius:8px;font-size:16px;outline:none;transition:border-color .2s}
+#landing input:focus{border-color:#1B4332}
+#landing button{padding:13px 32px;background:#1B4332;color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;transition:background .2s}
+#landing button:hover{background:#2D6A4F}
+.water-drop{font-size:48px;margin-bottom:4px}
+
+/* Chat view */
+#chat-view{flex:1;display:none;flex-direction:column;overflow:hidden}
+
+/* Slider header */
+#slider-header{padding:14px 20px;background:#fff;border-bottom:1px solid #e0e8e2;display:flex;align-items:center;gap:12px}
+#slider-badge{background:#1B4332;color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+#slider-meta{flex:1;min-width:0}
+#slider-title{font-size:15px;font-weight:700;color:#1B4332;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#slider-section{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.05em}
+#slider-progress{font-size:12px;color:#40916C;font-weight:600;white-space:nowrap}
+
+/* Scale bar */
+#scale-bar{padding:10px 20px 10px;background:#f8faf9;border-bottom:1px solid #e8f0ea;display:flex;gap:0;font-size:11px}
+.scale-seg{flex:1;text-align:center;padding:5px 4px;border-radius:4px;line-height:1.3}
+.scale-seg.best{background:#d8f3dc;color:#1B4332}
+.scale-seg.medium{background:#fef3cd;color:#7a5c00}
+.scale-seg.worst{background:#fde;color:#8b2020}
+.scale-label{font-weight:700;display:block;margin-bottom:2px}
+
+/* Messages */
+#messages{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:12px}
+#messages::-webkit-scrollbar{width:6px}
+#messages::-webkit-scrollbar-thumb{background:#c8dac8;border-radius:3px}
+
+.msg{display:flex;gap:10px;max-width:80%}
+.msg.bot{align-self:flex-start}
+.msg.user{align-self:flex-end;flex-direction:row-reverse}
+
+.avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;align-self:flex-end}
+.msg.bot .avatar{background:#e8f5e9;color:#1B4332}
+.msg.user .avatar{background:#1B4332;color:#fff}
+
+.bubble{padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.55;max-width:100%}
+.msg.bot .bubble{background:#fff;border:1px solid #e0ebe2;color:#222;border-bottom-left-radius:4px}
+.msg.user .bubble{background:#1B4332;color:#fff;border-bottom-right-radius:4px}
+
+.typing{display:flex;gap:5px;align-items:center;padding:12px 14px}
+.typing span{width:7px;height:7px;border-radius:50%;background:#40916C;animation:bounce .9s infinite}
+.typing span:nth-child(2){animation-delay:.15s}
+.typing span:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}
+
+/* Score + Input area */
+#input-area{background:#fff;border-top:1px solid #e0e8e2;padding:12px 20px 14px;display:flex;flex-direction:column;gap:10px}
+
+#score-row{display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f0f9f4;border-radius:8px;border:1px solid #c3e6cb}
+#score-row label{font-size:12px;color:#1B4332;font-weight:600;white-space:nowrap}
+#score-slider{flex:1;accent-color:#40916C;cursor:pointer}
+#score-value{font-size:13px;font-weight:700;color:#1B4332;width:60px;text-align:right;white-space:nowrap}
+#score-row.hidden{display:none}
+
+#message-row{display:flex;gap:10px}
+#msg-input{flex:1;padding:10px 14px;border:1px solid #cde;border-radius:8px;font-size:14px;outline:none;resize:none;min-height:44px;max-height:120px;line-height:1.4;font-family:inherit;transition:border-color .2s}
+#msg-input:focus{border-color:#40916C}
+#send-btn{padding:10px 18px;background:#1B4332;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-weight:600;white-space:nowrap;transition:background .2s}
+#send-btn:hover:not(:disabled){background:#2D6A4F}
+#send-btn:disabled{opacity:.5;cursor:default}
+
+#action-row{display:flex;gap:8px;flex-wrap:wrap}
+#log-idea-btn{padding:7px 14px;background:#e8f5e9;color:#1B4332;border:1px solid #95d5b2;border-radius:6px;font-size:13px;cursor:pointer;font-weight:500;transition:background .2s}
+#log-idea-btn:hover{background:#d1f0db}
+#next-btn{padding:7px 16px;background:#f0faf4;color:#1B4332;border:1px solid #40916C;border-radius:6px;font-size:13px;cursor:pointer;font-weight:600;transition:all .2s;margin-left:auto}
+#next-btn:hover{background:#1B4332;color:#fff}
+#next-btn.ready{background:#1B4332;color:#fff}
+#next-btn.ready:hover{background:#2D6A4F}
+#show-score-btn{padding:7px 14px;background:#fff8e6;color:#7a5c00;border:1px solid #f4c552;border-radius:6px;font-size:13px;cursor:pointer;transition:background .2s}
+#show-score-btn:hover{background:#fef0c0}
+
+/* Report view */
+#report-view{display:none;flex:1;overflow-y:auto;padding:32px;background:#f0f4f1}
+#report-view h1{font-size:26px;font-weight:700;color:#1B4332;margin-bottom:4px}
+#report-view .sub{color:#555;font-size:14px;margin-bottom:24px}
+.report-card{background:#fff;border-radius:10px;padding:16px 20px;margin-bottom:12px;border-left:4px solid #40916C}
+.report-card.worst-card{border-left-color:#C0392B}
+.report-card.medium-card{border-left-color:#E76F51}
+.report-card h3{font-size:14px;font-weight:700;color:#1B4332;margin-bottom:4px}
+.report-card .score-line{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.score-bar-wrap{flex:1;height:8px;background:#e8f0ea;border-radius:4px;overflow:hidden}
+.score-bar-fill{height:100%;border-radius:4px;transition:width .6s}
+.score-num{font-size:13px;font-weight:700;width:40px}
+.report-ideas{list-style:none;display:flex;flex-direction:column;gap:4px}
+.report-ideas li{font-size:13px;color:#333;padding:4px 10px;background:#f5f5f5;border-radius:4px}
+.report-ideas li::before{content:"💡 "}
+.report-summary{background:#1B4332;color:#fff;border-radius:10px;padding:20px;margin-bottom:20px}
+.report-summary h2{font-size:18px;margin-bottom:12px;color:#95d5b2}
+.summary-stats{display:flex;gap:20px;flex-wrap:wrap}
+.stat-box{background:rgba(255,255,255,.1);border-radius:8px;padding:12px 16px;text-align:center}
+.stat-num{font-size:28px;font-weight:700;color:#95d5b2}
+.stat-label{font-size:11px;color:#d8f3dc;text-transform:uppercase;letter-spacing:.05em}
+#export-btn{margin-top:8px;padding:11px 24px;background:#40916C;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
+#export-btn:hover{background:#2D6A4F}
+#restart-btn{margin-top:8px;margin-left:10px;padding:11px 24px;background:#fff;color:#1B4332;border:1px solid #40916C;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
+
+/* Idea log modal */
+#idea-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center}
+#idea-modal.open{display:flex}
+#idea-box{background:#fff;border-radius:12px;padding:24px;width:420px;max-width:92vw}
+#idea-box h3{font-size:16px;font-weight:700;color:#1B4332;margin-bottom:12px}
+#idea-input{width:100%;padding:10px 12px;border:1px solid #cde;border-radius:6px;font-size:14px;outline:none;resize:none;height:80px;font-family:inherit}
+#idea-input:focus{border-color:#40916C}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.modal-btns button{padding:8px 18px;border-radius:6px;font-size:14px;cursor:pointer;font-weight:600}
+#idea-cancel{background:#f0f0f0;border:none;color:#555}
+#idea-save{background:#1B4332;border:none;color:#fff}
+</style>
+</head>
+<body>
+
+<!-- ── Sidebar ── -->
+<div id="sidebar">
+  <div id="sidebar-header">
+    <h2>Water Eco-Ideation</h2>
+    <div id="product-name">—</div>
+    <span id="mode-badge">scripted</span>
+  </div>
+  <div id="progress-list"></div>
+  <div id="ideas-panel">
+    <h3>Ideas logged</h3>
+    <div id="idea-count">0 ideas across all sliders</div>
+    <ul id="ideas-list"></ul>
+  </div>
+</div>
+
+<!-- ── Main content ── -->
+<div id="main">
+
+  <!-- Landing -->
+  <div id="landing">
+    <div class="water-drop">💧</div>
+    <h1>Water Footprint<br>Eco-Ideation Session</h1>
+    <p>A conversational facilitator that walks you through 14 water-use sliders, asks probing follow-up questions, and logs your ideas — based on the Bocken et al. (2011) methodology.</p>
+    <input id="product-input" type="text" placeholder="Product name (e.g. Cotton T-shirt, Oat Milk)">
+    <button id="start-btn">Start Session &rarr;</button>
+  </div>
+
+  <!-- Chat -->
+  <div id="chat-view">
+    <div id="slider-header">
+      <div id="slider-badge">1</div>
+      <div id="slider-meta">
+        <div id="slider-title">Loading…</div>
+        <div id="slider-section">Product Design</div>
+      </div>
+      <div id="slider-progress">1 / 14</div>
+    </div>
+
+    <div id="scale-bar">
+      <div class="scale-seg best"><span class="scale-label">Best</span><span id="scale-best">—</span></div>
+      <div class="scale-seg medium"><span class="scale-label">Medium</span><span id="scale-medium">—</span></div>
+      <div class="scale-seg worst"><span class="scale-label">Worst</span><span id="scale-worst">—</span></div>
+    </div>
+
+    <div id="messages"></div>
+
+    <div id="input-area">
+      <div id="score-row" class="hidden">
+        <label>Your score:</label>
+        <input type="range" id="score-slider" min="0" max="100" value="50">
+        <span id="score-value">50 — Medium</span>
+      </div>
+      <div id="message-row">
+        <textarea id="msg-input" rows="1" placeholder="Type your response…"></textarea>
+        <button id="send-btn">Send ▶</button>
+      </div>
+      <div id="action-row">
+        <button id="log-idea-btn">📝 Log idea</button>
+        <button id="show-score-btn">🎯 Score this slider</button>
+        <button id="next-btn">Next slider →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Report -->
+  <div id="report-view">
+    <h1>Session Report</h1>
+    <div class="sub" id="report-sub">—</div>
+    <div class="report-summary" id="report-summary"></div>
+    <div id="report-cards"></div>
+    <button id="export-btn">⬇ Export JSON</button>
+    <button id="restart-btn">↩ New Session</button>
+  </div>
+</div>
+
+<!-- Idea modal -->
+<div id="idea-modal">
+  <div id="idea-box">
+    <h3>📝 Log an idea</h3>
+    <textarea id="idea-input" placeholder="Describe the improvement idea…"></textarea>
+    <div class="modal-btns">
+      <button id="idea-cancel">Cancel</button>
+      <button id="idea-save">Save idea</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const BASE = '';
+let sessionId = null;
+let currentSlider = 0;
+let totalSliders = 14;
+let canAdvanceFlag = false;
+let allIdeas = []; // { slider, sliderId, text }
+let sessionData = null;
+
+const SLIDERS_META = [
+  {id:1,title:'Material Origin',section:'Product Design'},
+  {id:2,title:'Crop / Material Water Intensity',section:'Product Design'},
+  {id:3,title:'Sourcing Basin Water Stress',section:'Product Design'},
+  {id:4,title:'Product Concentration',section:'Product Design'},
+  {id:5,title:'Durability and Service Life',section:'Product Design'},
+  {id:6,title:'Recycled Content and Recyclability',section:'Product Design'},
+  {id:7,title:'Food and Material Waste by Design',section:'Product Design'},
+  {id:8,title:'Wet Processing Intensity',section:'Processing & Value Chain'},
+  {id:9,title:'Industrial Cooling Water Demand',section:'Processing & Value Chain'},
+  {id:10,title:'Supply Chain Loss Rate',section:'Processing & Value Chain'},
+  {id:11,title:'Virtual Water Trade Distance',section:'Processing & Value Chain'},
+  {id:12,title:'Consumer Use Water',section:'Processing & Value Chain'},
+  {id:13,title:'Cold Chain and Freshness Preservation',section:'Processing & Value Chain'},
+  {id:14,title:'End-of-Life Water Recovery',section:'Processing & Value Chain'},
+];
+
+// ── UI helpers ─────────────────────────────────────────────────────────────
+function show(id){ document.getElementById(id).style.display='flex'; }
+function hide(id){ document.getElementById(id).style.display='none'; }
+
+function appendMsg(text, role){
+  const wrap = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar';
+  avatar.textContent = role === 'bot' ? '🌿' : '👤';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.textContent = text;
+  div.append(avatar, bubble);
+  wrap.append(div);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function showTyping(){
+  const wrap = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg bot'; div.id = 'typing-indicator';
+  div.innerHTML = '<div class="avatar">🌿</div><div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div>';
+  wrap.append(div);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function hideTyping(){
+  const t = document.getElementById('typing-indicator');
+  if(t) t.remove();
+}
+
+function updateSliderHeader(meta){
+  document.getElementById('slider-badge').textContent  = meta.id;
+  document.getElementById('slider-title').textContent  = meta.title;
+  document.getElementById('slider-section').textContent = meta.section;
+  document.getElementById('slider-progress').textContent = `${meta.id} / ${totalSliders}`;
+  if(meta.best){
+    document.getElementById('scale-best').textContent   = meta.best;
+    document.getElementById('scale-medium').textContent = meta.medium;
+    document.getElementById('scale-worst').textContent  = meta.worst;
+  }
+}
+
+function buildProgressList(){
+  const list = document.getElementById('progress-list');
+  list.innerHTML = '';
+  let lastSection = '';
+  SLIDERS_META.forEach((s,i) => {
+    if(s.section !== lastSection){
+      const lbl = document.createElement('div');
+      lbl.className = 'prog-section';
+      lbl.textContent = s.section;
+      list.append(lbl);
+      lastSection = s.section;
+    }
+    const item = document.createElement('div');
+    item.className = 'prog-item' + (i === currentSlider ? ' active' : '') + (i < currentSlider ? ' done' : '');
+    item.id = `prog-${i}`;
+    item.innerHTML = `<div class="prog-dot">${i < currentSlider ? '✓' : s.id}</div><div class="prog-label">${s.title}</div>`;
+    list.append(item);
+  });
+}
+
+function updateProgressList(){
+  SLIDERS_META.forEach((_,i) => {
+    const el = document.getElementById(`prog-${i}`);
+    if(!el) return;
+    el.className = 'prog-item' + (i === currentSlider ? ' active' : '') + (i < currentSlider ? ' done' : '');
+    el.querySelector('.prog-dot').textContent = i < currentSlider ? '✓' : SLIDERS_META[i].id;
+  });
+}
+
+function updateIdeaPanel(){
+  const total = allIdeas.length;
+  document.getElementById('idea-count').textContent = `${total} idea${total!==1?'s':''} across all sliders`;
+  const list = document.getElementById('ideas-list');
+  list.innerHTML = '';
+  allIdeas.slice(-6).reverse().forEach(idea => {
+    const li = document.createElement('li');
+    li.textContent = idea.text;
+    list.append(li);
+  });
+}
+
+function scoreToLabel(v){
+  return v >= 67 ? 'Best' : v >= 34 ? 'Medium' : 'Worst';
+}
+function scoreToColor(v){
+  const r = v > 50 ? Math.round(64 + (100-v)*1.56) : 200;
+  const g = v > 50 ? 145 : Math.round(v*2.9);
+  return `rgb(${r},${g},40)`;
+}
+
+// ── Score slider ───────────────────────────────────────────────────────────
+document.getElementById('score-slider').addEventListener('input', e => {
+  const v = Number(e.target.value);
+  document.getElementById('score-value').textContent = `${v} — ${scoreToLabel(v)}`;
+});
+
+document.getElementById('show-score-btn').addEventListener('click', () => {
+  const row = document.getElementById('score-row');
+  row.classList.toggle('hidden');
+  if(!row.classList.contains('hidden')){
+    document.getElementById('show-score-btn').textContent = '🎯 Hide score';
+    // Save score immediately on toggle
+    const v = Number(document.getElementById('score-slider').value);
+    saveScore(v);
+  } else {
+    document.getElementById('show-score-btn').textContent = '🎯 Score this slider';
+  }
+});
+
+async function saveScore(v){
+  await fetch('/api/score', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ sessionId, score: v })
+  });
+}
+
+// ── Start session ──────────────────────────────────────────────────────────
+document.getElementById('start-btn').addEventListener('click', startSession);
+document.getElementById('product-input').addEventListener('keydown', e => {
+  if(e.key === 'Enter') startSession();
+});
+
+async function startSession(){
+  const name = document.getElementById('product-input').value.trim();
+  if(!name){ document.getElementById('product-input').focus(); return; }
+
+  // Check mode
+  const modeResp = await fetch('/api/mode').then(r=>r.json());
+  document.getElementById('mode-badge').textContent = modeResp.ai ? '🤖 AI (Gemini)' : '📋 Scripted';
+
+  const resp = await fetch('/api/session/new',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ productName: name })
+  }).then(r=>r.json());
+
+  sessionId    = resp.sessionId;
+  totalSliders = resp.totalSliders;
+  currentSlider = 0;
+
+  document.getElementById('product-name').textContent = name;
+  hide('landing');
+  show('chat-view');
+  buildProgressList();
+  loadSlider();
+}
+
+// ── Load current slider ────────────────────────────────────────────────────
+async function loadSlider(){
+  document.getElementById('messages').innerHTML = '';
+  document.getElementById('score-row').classList.add('hidden');
+  document.getElementById('show-score-btn').textContent = '🎯 Score this slider';
+  document.getElementById('score-slider').value = 50;
+  document.getElementById('score-value').textContent = '50 — Medium';
+  canAdvanceFlag = false;
+  document.getElementById('next-btn').classList.remove('ready');
+
+  showTyping();
+  const resp = await fetch('/api/intro', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ sessionId })
+  }).then(r=>r.json());
+  hideTyping();
+
+  if(resp.done){
+    showReport();
+    return;
+  }
+
+  updateSliderHeader(resp.slider);
+  updateProgressList();
+  appendMsg(resp.text, 'bot');
+}
+
+// ── Send message ───────────────────────────────────────────────────────────
+document.getElementById('send-btn').addEventListener('click', sendMessage);
+document.getElementById('msg-input').addEventListener('keydown', e => {
+  if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); }
+});
+
+async function sendMessage(){
+  const input = document.getElementById('msg-input');
+  const text = input.value.trim();
+  if(!text) return;
+  input.value = '';
+  input.style.height = '';
+
+  appendMsg(text, 'user');
+  document.getElementById('send-btn').disabled = true;
+  showTyping();
+
+  const resp = await fetch('/api/chat', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ sessionId, message: text })
+  }).then(r=>r.json());
+
+  hideTyping();
+  document.getElementById('send-btn').disabled = false;
+  appendMsg(resp.text, 'bot');
+
+  if(resp.canAdvance && !canAdvanceFlag){
+    canAdvanceFlag = true;
+    document.getElementById('next-btn').classList.add('ready');
+  }
+  if(resp.done){ showReport(); }
+}
+
+// Auto-resize textarea
+document.getElementById('msg-input').addEventListener('input', function(){
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+});
+
+// ── Log idea ───────────────────────────────────────────────────────────────
+document.getElementById('log-idea-btn').addEventListener('click', () => {
+  document.getElementById('idea-modal').classList.add('open');
+  document.getElementById('idea-input').value = '';
+  document.getElementById('idea-input').focus();
+});
+document.getElementById('idea-cancel').addEventListener('click', () => {
+  document.getElementById('idea-modal').classList.remove('open');
+});
+document.getElementById('idea-save').addEventListener('click', saveIdea);
+document.getElementById('idea-input').addEventListener('keydown', e => {
+  if(e.key === 'Enter' && e.ctrlKey) saveIdea();
+});
+
+async function saveIdea(){
+  const text = document.getElementById('idea-input').value.trim();
+  if(!text) return;
+  document.getElementById('idea-modal').classList.remove('open');
+
+  await fetch('/api/idea', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ sessionId, idea: text })
+  });
+
+  allIdeas.push({ slider: SLIDERS_META[currentSlider]?.title, text });
+  updateIdeaPanel();
+  appendMsg(`✅ Idea logged: "${text}"`, 'bot');
+}
+
+// ── Next slider ────────────────────────────────────────────────────────────
+document.getElementById('next-btn').addEventListener('click', async () => {
+  // Save score if visible
+  const scoreRow = document.getElementById('score-row');
+  if(!scoreRow.classList.contains('hidden')){
+    await saveScore(Number(document.getElementById('score-slider').value));
+  }
+
+  const resp = await fetch('/api/next', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ sessionId })
+  }).then(r=>r.json());
+
+  if(resp.done){ showReport(); return; }
+  currentSlider = resp.currentSlider;
+  updateProgressList();
+  loadSlider();
+});
+
+// ── Report ─────────────────────────────────────────────────────────────────
+async function showReport(){
+  hide('chat-view');
+  show('report-view');
+
+  const sess = await fetch(`/api/session/${sessionId}`).then(r=>r.json());
+  sessionData = sess;
+
+  const scored = sess.sliders.filter(s => s.score !== null);
+  const avg = scored.length
+    ? Math.round(scored.reduce((a,s) => a + s.score, 0) / scored.length)
+    : null;
+  const totalIdeas = sess.sliders.reduce((a,s) => a + s.ideas.length, 0);
+  const lowest = [...scored].sort((a,b)=>a.score-b.score).slice(0,3);
+
+  document.getElementById('report-sub').textContent =
+    `${sess.productName} · ${sess.sliders.filter(s=>s.score!==null).length} sliders scored · ${totalIdeas} ideas logged`;
+
+  // Summary block
+  const sumEl = document.getElementById('report-summary');
+  sumEl.innerHTML = `
+    <h2>Session Summary</h2>
+    <div class="summary-stats">
+      <div class="stat-box"><div class="stat-num">${avg ?? '—'}</div><div class="stat-label">Avg Score</div></div>
+      <div class="stat-box"><div class="stat-num">${totalIdeas}</div><div class="stat-label">Ideas Logged</div></div>
+      <div class="stat-box"><div class="stat-num">${scored.length}/14</div><div class="stat-label">Sliders Scored</div></div>
+    </div>
+    ${lowest.length ? `<p style="margin-top:14px;font-size:13px;color:#d8f3dc">🎯 Highest-priority sliders: ${lowest.map(s=>`<strong>${s.title}</strong> (${s.score})`).join(', ')}</p>` : ''}`;
+
+  // Cards
+  const cardsEl = document.getElementById('report-cards');
+  cardsEl.innerHTML = '';
+  sess.sliders.forEach(s => {
+    const card = document.createElement('div');
+    const cls = s.score===null ? '' : s.score>=67 ? '' : s.score>=34 ? 'medium-card' : 'worst-card';
+    card.className = `report-card ${cls}`;
+    const color = s.score!==null ? scoreToColor(s.score) : '#ccc';
+    card.innerHTML = `
+      <h3>${s.id}. ${s.title} <small style="color:#888;font-weight:400">(${s.section})</small></h3>
+      <div class="score-line">
+        <div class="score-bar-wrap"><div class="score-bar-fill" style="width:${s.score??0}%;background:${color}"></div></div>
+        <div class="score-num" style="color:${color}">${s.score!==null ? s.score+' — '+s.rating : 'Not scored'}</div>
+      </div>
+      ${s.ideas.length ? `<ul class="report-ideas">${s.ideas.map(i=>`<li>${i.text}</li>`).join('')}</ul>` : '<p style="font-size:12px;color:#999">No ideas logged</p>'}`;
+    cardsEl.append(card);
+  });
+}
+
+document.getElementById('export-btn').addEventListener('click', () => {
+  window.open(`/api/export/${sessionId}`, '_blank');
+});
+
+document.getElementById('restart-btn').addEventListener('click', () => {
+  sessionId = null; currentSlider = 0; allIdeas = [];
+  document.getElementById('messages').innerHTML = '';
+  document.getElementById('product-name').textContent = '—';
+  document.getElementById('report-view').style.display = 'none';
+  show('landing');
+  document.getElementById('product-input').value = '';
+  document.getElementById('product-input').focus();
+  document.getElementById('ideas-list').innerHTML = '';
+  document.getElementById('idea-count').textContent = '0 ideas across all sliders';
+});
+
+// Close modal on backdrop click
+document.getElementById('idea-modal').addEventListener('click', e => {
+  if(e.target === document.getElementById('idea-modal'))
+    document.getElementById('idea-modal').classList.remove('open');
+});
+
+// Init: make landing visible
+document.getElementById('chat-view').style.display = 'none';
+document.getElementById('report-view').style.display = 'none';
+</script>
+</body>
+</html>
